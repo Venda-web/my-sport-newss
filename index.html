@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>СпортНовости</title>
+    <meta charset="utf-8">
+    <style>
+        body { margin: 0; font-family: Arial; background: #f0f0f0; }
+        .header { background: #1a2a3a; color: white; font-size: 24px; padding: 15px; text-align: center; }
+        .container { max-width: 900px; margin: 10px auto; padding: 10px; }
+        .column { background: white; padding: 15px; margin: 10px 0; border-radius: 10px; position: relative; }
+        h2 { margin: 0 0 10px 0; }
+        .football h2 { color: #27ae60; }
+        .hockey h2 { color: #e67e22; }
+        .news { border-bottom: 1px solid #ddd; padding: 8px 0; }
+        .news:last-child { border: 0; }
+        .date { color: gray; font-size: 12px; }
+        .admin-btn { position: fixed; top: 10px; right: 10px; background: #1a2a3a; color: white; border: 0; padding: 8px 15px; border-radius: 5px; cursor: pointer; z-index: 999; }
+        .admin-panel { background: #fff3cd; padding: 20px; border-radius: 10px; margin: 10px 0; border: 2px solid #ffc107; }
+        .admin-panel h3 { margin: 0 0 10px 0; color: #856404; }
+        input, textarea { width: 100%; margin: 5px 0; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+        button { background: #1a2a3a; color: white; border: 0; padding: 8px 15px; margin: 2px; border-radius: 4px; cursor: pointer; }
+        button.delete { background: #dc3545; }
+        .login-box { background: white; padding: 20px; border-radius: 10px; max-width: 300px; margin: 20px auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        .hidden { display: none; }
+        .admin-only { display: none; }
+        .admin-mode .admin-only { display: block; }
+        .admin-mode .admin-inline { display: inline-block; }
+        .admin-inline { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="header">⚽ СПОРТНОВОСТИ 🏒</div>
+
+<!-- Кнопка для входа в админку (видна всем, но войти можешь только ты) -->
+<button class="admin-btn" onclick="showLogin()">🔑 Админка</button>
+
+<div class="container" id="app">
+    <!-- Окно входа (появляется при нажатии на кнопку) -->
+    <div id="loginModal" class="hidden">
+        <div class="login-box">
+            <h3>🔐 Вход для администратора</h3>
+            <input type="password" id="passwordInput" placeholder="Пароль">
+            <button onclick="checkPassword()">Войти</button>
+            <button onclick="hideLogin()" style="background: #6c757d;">Отмена</button>
+            <div id="loginError" style="color:red; margin-top:10px;"></div>
+        </div>
+    </div>
+
+    <!-- Панель администратора (видна только после входа) -->
+    <div id="adminPanel" class="admin-panel hidden">
+        <h3>⚙️ Панель управления</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <!-- Форма для футбола -->
+            <div>
+                <h4 style="color:#27ae60;">Добавить футбол</h4>
+                <input id="fDate" placeholder="Дата" value="18.02.2026">
+                <input id="fTitle" placeholder="Заголовок">
+                <textarea id="fText" placeholder="Текст новости"></textarea>
+                <button onclick="addFootball()">➕ Добавить</button>
+            </div>
+            <!-- Форма для хоккея -->
+            <div>
+                <h4 style="color:#e67e22;">Добавить хоккей</h4>
+                <input id="hDate" placeholder="Дата" value="18.02.2026">
+                <input id="hTitle" placeholder="Заголовок">
+                <textarea id="hText" placeholder="Текст новости"></textarea>
+                <button onclick="addHockey()">➕ Добавить</button>
+            </div>
+        </div>
+        <button onclick="logout()" style="background: #dc3545; margin-top: 10px;">Выйти из админки</button>
+    </div>
+
+    <!-- Футбольные новости (видят все) -->
+    <div class="column football">
+        <h2>⚽ ФУТБОЛ</h2>
+        <div id="footballNews"></div>
+    </div>
+    
+    <!-- Хоккейные новости (видят все) -->
+    <div class="column hockey">
+        <h2>🏒 ХОККЕЙ</h2>
+        <div id="hockeyNews"></div>
+    </div>
+</div>
+
+<script>
+// ======== ТВОЙ ПАРОЛЬ (поменяй на свой) ========
+const SECRET_PASSWORD = "sport123";
+
+// ======== Данные ========
+let football = JSON.parse(localStorage.getItem('football') || '[]');
+let hockey = JSON.parse(localStorage.getItem('hockey') || '[]');
+let isAdmin = false;
+
+// Показать окно входа
+function showLogin() {
+    document.getElementById('loginModal').classList.remove('hidden');
+}
+
+// Скрыть окно входа
+function hideLogin() {
+    document.getElementById('loginModal').classList.add('hidden');
+    document.getElementById('passwordInput').value = '';
+    document.getElementById('loginError').innerHTML = '';
+}
+
+// Проверка пароля
+function checkPassword() {
+    const pwd = document.getElementById('passwordInput').value;
+    if(pwd === SECRET_PASSWORD) {
+        isAdmin = true;
+        document.getElementById('adminPanel').classList.remove('hidden');
+        hideLogin();
+        showNews();
+    } else {
+        document.getElementById('loginError').innerHTML = 'Неверный пароль!';
+    }
+}
+
+// Выход из админки
+function logout() {
+    isAdmin = false;
+    document.getElementById('adminPanel').classList.add('hidden');
+    showNews();
+}
+
+// Добавить футбол
+function addFootball() {
+    if(!isAdmin) return;
+    const date = document.getElementById('fDate').value;
+    const title = document.getElementById('fTitle').value;
+    const text = document.getElementById('fText').value;
+    
+    if(!title || !text) {
+        alert('Заполни заголовок и текст!');
+        return;
+    }
+    
+    football.push({ date, title, text });
+    saveAll();
+    
+    // Очистить поля
+    document.getElementById('fTitle').value = '';
+    document.getElementById('fText').value = '';
+}
+
+// Добавить хоккей
+function addHockey() {
+    if(!isAdmin) return;
+    const date = document.getElementById('hDate').value;
+    const title = document.getElementById('hTitle').value;
+    const text = document.getElementById('hText').value;
+    
+    if(!title || !text) {
+        alert('Заполни заголовок и текст!');
+        return;
+    }
+    
+    hockey.push({ date, title, text });
+    saveAll();
+    
+    document.getElementById('hTitle').value = '';
+    document.getElementById('hText').value = '';
+}
+
+// Удалить новость
+function deleteNews(sport, index) {
+    if(!isAdmin) return;
+    if(confirm('Удалить новость?')) {
+        if(sport == 'f') football.splice(index, 1);
+        else hockey.splice(index, 1);
+        saveAll();
+    }
+}
+
+// Сохранить и показать
+function saveAll() {
+    localStorage.setItem('football', JSON.stringify(football));
+    localStorage.setItem('hockey', JSON.stringify(hockey));
+    showNews();
+}
+
+// Показать новости
+function showNews() {
+    let fHtml = '', hHtml = '';
+    
+    football.forEach((item, i) => {
+        fHtml += `<div class="news">
+            <span class="date">${item.date}</span>
+            <b>${item.title}</b><br>${item.text}`;
+        
+        // Кнопка удаления только для админа
+        if(isAdmin) {
+            fHtml += ` <button class="delete admin-inline" onclick="deleteNews('f', ${i})" style="float:right;">✖</button>`;
+        }
+        
+        fHtml += `</div>`;
+    });
+    
+    hockey.forEach((item, i) => {
+        hHtml += `<div class="news">
+            <span class="date">${item.date}</span>
+            <b>${item.title}</b><br>${item.text}`;
+        
+        if(isAdmin) {
+            hHtml += ` <button class="delete admin-inline" onclick="deleteNews('h', ${i})" style="float:right;">✖</button>`;
+        }
+        
+        hHtml += `</div>`;
+    });
+    
+    document.getElementById('footballNews').innerHTML = fHtml || '<p>Пока нет новостей</p>';
+    document.getElementById('hockeyNews').innerHTML = hHtml || '<p>Пока нет новостей</p>';
+}
+
+// Показать новости при загрузке
+showNews();
+</script>
+
+</body>
+</html>
