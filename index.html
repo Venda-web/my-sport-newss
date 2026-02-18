@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>СпортНовости</title>
+    <meta charset="utf-8">
+    <style>
+        body { margin: 0; font-family: Arial; background: #f0f0f0; }
+        .header { background: #1a2a3a; color: white; font-size: 24px; padding: 15px; text-align: center; }
+        .container { max-width: 900px; margin: 10px auto; padding: 10px; }
+        .column { background: white; padding: 15px; margin: 10px 0; border-radius: 10px; }
+        .foot { background: #ffd700; } .hock { background: #87ceeb; }
+        h2 { margin: 0 0 10px 0; }
+        .news { border-bottom: 1px solid #ddd; padding: 8px 0; }
+        .news:last-child { border: 0; }
+        .date { color: gray; font-size: 12px; }
+        input, textarea { width: 100%; margin: 5px 0; padding: 5px; border: 1px solid #ccc; }
+        button { background: #1a2a3a; color: white; border: 0; padding: 8px; margin: 2px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="header">⚽ СПОРТНОВОСТИ 🏒</div>
+
+<div class="container" id="app">
+    <!-- Футбол -->
+    <div class="column">
+        <h2 style="color:green;">⚽ ФУТБОЛ</h2>
+        <div id="footballNews"></div>
+        <input id="fDate" placeholder="Дата" value="18.02.2026">
+        <input id="fTitle" placeholder="Заголовок" value="Роналду забил гол">
+        <textarea id="fText" placeholder="Текст">Португалец открыл счет</textarea>
+        <button onclick="addFootball()">➕ Добавить</button>
+    </div>
+    
+    <!-- Хоккей -->
+    <div class="column">
+        <h2 style="color:blue;">🏒 ХОККЕЙ</h2>
+        <div id="hockeyNews"></div>
+        <input id="hDate" placeholder="Дата" value="18.02.2026">
+        <input id="hTitle" placeholder="Заголовок" value="Овечкин забросил">
+        <textarea id="hText" placeholder="Текст">37-я шайба в сезоне</textarea>
+        <button onclick="addHockey()">➕ Добавить</button>
+    </div>
+    
+    <div style="text-align:center; color:gray; padding:10px;">
+        Новости сохраняются в твоем браузере
+    </div>
+</div>
+
+<script>
+// ======== Простая база данных в телефоне/компьютере ========
+let football = JSON.parse(localStorage.getItem('football') || '[]');
+let hockey = JSON.parse(localStorage.getItem('hockey') || '[]');
+
+// Добавить футбол
+function addFootball() {
+    football.push({
+        date: document.getElementById('fDate').value,
+        title: document.getElementById('fTitle').value,
+        text: document.getElementById('fText').value
+    });
+    saveAll();
+}
+
+// Добавить хоккей
+function addHockey() {
+    hockey.push({
+        date: document.getElementById('hDate').value,
+        title: document.getElementById('hTitle').value,
+        text: document.getElementById('hText').value
+    });
+    saveAll();
+}
+
+// Удалить новость
+function deleteNews(sport, index) {
+    if(sport == 'f') football.splice(index, 1);
+    else hockey.splice(index, 1);
+    saveAll();
+}
+
+// Сохранить и показать
+function saveAll() {
+    localStorage.setItem('football', JSON.stringify(football));
+    localStorage.setItem('hockey', JSON.stringify(hockey));
+    showNews();
+}
+
+// Показать новости
+function showNews() {
+    let fHtml = '', hHtml = '';
+    
+    football.forEach((item, i) => {
+        fHtml += `<div class="news">
+            <span class="date">${item.date}</span>
+            <b>${item.title}</b><br>${item.text}
+            <button onclick="deleteNews('f', ${i})" style="float:right;">✖</button>
+        </div>`;
+    });
+    
+    hockey.forEach((item, i) => {
+        hHtml += `<div class="news">
+            <span class="date">${item.date}</span>
+            <b>${item.title}</b><br>${item.text}
+            <button onclick="deleteNews('h', ${i})" style="float:right;">✖</button>
+        </div>`;
+    });
+    
+    document.getElementById('footballNews').innerHTML = fHtml || '<p>Нет новостей</p>';
+    document.getElementById('hockeyNews').innerHTML = hHtml || '<p>Нет новостей</p>';
+}
+
+// Показать при загрузке
+showNews();
+</script>
+
+</body>
+</html>
